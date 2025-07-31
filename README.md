@@ -40,13 +40,73 @@ odoo/
 
 ## ⚙️ Configuration
 
-### Docker Services
+### Docker Compose Configuration (`docker-compose.yml`)
+
+```yaml
+version: '3.1'
+
+services:
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: odoo
+      POSTGRES_USER: odoo
+      POSTGRES_PASSWORD: odoo
+    volumes:
+      - odoo-db-data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432" # PostgreSQL running on a different port on the host
+    networks:
+      - odoo-network
+
+  odoo:
+    image: odoo:17
+    depends_on:
+      - db
+    ports:
+      - "8069:8069"
+    volumes:
+      - odoo-web-data:/var/lib/odoo
+      - ./addons:/mnt/extra-addons
+      - ./config/odoo.conf:/etc/odoo/odoo.conf
+    networks:
+      - odoo-network
+    command: ["odoo", "-d", "odoo", "-i", "base", "--stop-after-init"] #first time
+    #command: ["--", "-i", "base"] # This line is partially visible and commented out in the second image.
+    #command: ["odoo", "-d", "odoo", "-u", "money_management", "--without-demo-all"]
+
+volumes:
+  odoo-db-data:
+  odoo-web-data:
+
+networks:
+  odoo-network:
+
+# In case error docker pull odoo:17
+```
+
+### Odoo Configuration (`config/odoo.conf`)
+
+```ini
+[options]
+admin_passwd = admin
+xmlrpc_port = 8069
+db_host = db
+db_user = odoo
+db_password = odoo
+db_port = 5432
+addons_path = /mnt/extra-addons
+```
+
+### Configuration Details
+
+**Docker Services:**
 - **PostgreSQL 13**: Database service running on port 5433
 - **Odoo 17**: Application service running on port 8069
 - **Custom Network**: Isolated network for services
 - **Persistent Volumes**: Data persistence for database and Odoo files
 
-### Odoo Configuration
+**Odoo Configuration:**
 - **Admin Password**: `admin`
 - **XML-RPC Port**: `8069`
 - **Database Host**: `db` (Docker service name)
